@@ -69,7 +69,7 @@ export default function App() {
   useEffect(() => {
     const f = () => {
       setStatusLoading(true);
-      fetch(`https://mcapi.us/server/status?ip=${SERVER_IP}`)
+      fetch(`https://api.mcsrvstat.us/3/${SERVER_IP}`)
         .then((r) => r.json())
         .then((d) => { setServerStatus(d); setStatusLoading(false); })
         .catch(() => { setServerStatus(null); setStatusLoading(false); });
@@ -108,10 +108,13 @@ export default function App() {
     { id: "elytra", icon: "🪽", name: "Armored Elytra", hint: "QoL / equipment", url: "https://modrinth.com/datapack/elytra-armor", desc: "Combine an elytra with a chestplate so you don't have to choose between flying and armor. Already on the server as a datapack, but if you install the Fabric mod client-side you get the proper combined item texture." },
   ];
 
-  const pc = serverStatus?.players?.now || 0;
+  const pc = serverStatus?.players?.online || 0;
   const mp = serverStatus?.players?.max || 20;
   const on = serverStatus?.online;
-  const playerNames = serverStatus?.players?.sample || [];
+  // mcsrvstat.us returns players.list as an array of strings (usernames)
+  const playerNames = (serverStatus?.players?.list || []).map((name) =>
+    typeof name === "string" ? { name } : name
+  );
 
   // Colors
   const gold = "#d4a84b";
