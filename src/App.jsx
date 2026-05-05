@@ -22,7 +22,13 @@ export default function App() {
   const [serverStatus, setServerStatus] = useState(null);
   const [statusLoading, setStatusLoading] = useState(true);
   const [step, setStep] = useState("landing");
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    try {
+      const cached = JSON.parse(localStorage.getItem(AUTH_CACHE_KEY));
+      if (cached && cached.username && cached.isMember) return cached;
+    } catch {}
+    return null;
+  });
   const [platform, setPlatform] = useState(null);
   const [console_, setConsole_] = useState(null);
   const [copied, setCopied] = useState(false);
@@ -40,16 +46,6 @@ export default function App() {
       op: 0.08 + Math.random() * 0.14,
     }))
   );
-
-  // ── Load cached auth on mount ──
-  useEffect(() => {
-    try {
-      const cached = JSON.parse(localStorage.getItem(AUTH_CACHE_KEY));
-      if (cached && cached.username && cached.isMember) {
-        setUser(cached);
-      }
-    } catch {}
-  }, []);
 
   // ── Handle Discord OAuth callback ──
   useEffect(() => {
@@ -231,13 +227,6 @@ export default function App() {
                 <p style={{ fontSize: "13px", color: textSec }}>{pc} player{pc !== 1 ? "s" : ""} online</p>
               </div>
             )}
-
-            {/* About section */}
-            <div style={{ background: card, border: `1px solid ${border}`, borderRadius: "10px", padding: "28px", maxWidth: "600px" }}>
-              <p style={{ fontSize: "15px", color: textSec, lineHeight: 1.8 }}>
-                Wirt's World is a server for friends. We've got proximity voice chat if you're on Java and install Simple Voice Chat, your Discord nickname and role color sync to your in-game name automatically, and you can explore the whole world in 3D on our <button onClick={() => navTo("map")} style={{ background: "none", border: "none", color: gold, fontSize: "15px", cursor: "pointer", fontFamily: "'Sora', sans-serif", fontWeight: "600", padding: 0, textDecoration: "underline", textUnderlineOffset: "3px" }}>live map</button>.
-              </p>
-            </div>
           </div>
         )}
 
