@@ -195,9 +195,9 @@ export default function App() {
             <h2 style={{ fontSize: "24px", fontWeight: "800", letterSpacing: "-0.5px", marginBottom: "20px" }}>Server Information</h2>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "12px" }}>
               {[
-                { tag: "MAP", t: "3D World Map", d: "BlueMap renders the entire world in 3D right in your browser. Check out builds, scope out terrain, or just see where everyone is.", link: true },
+                { tag: "MAP", t: "3D World Map", d: "BlueMap renders the entire world in 3D right in your browser. Check out builds or just see where everyone is.", link: true },
                 { tag: "VOICE", t: "Proximity Voice Chat", d: "If you're on Java and install Simple Voice Chat, you can talk to nearby players in-game." },
-                { tag: "SYNC", t: "Discord Nicknames", d: "Once you link your accounts, your Discord nickname and role color automatically sync to your in-game display name." },
+                { tag: "SYNC", t: "Discord Nicknames", d: "To be added to the whitelist, you link your Discord and Minecraft accounts. Follow the join instructions to figure out more. Once your accounts are linked, your Discord Nickname changes your name in game." },
               ].map((f, i) => (
                 <div key={i} style={{ background: card, border: `1px solid ${border}`, borderRadius: "10px", padding: "24px" }}>
                   <span style={{ fontSize: "10px", fontFamily: "'DM Mono', monospace", letterSpacing: "2px", color: gold }}>{f.tag}</span>
@@ -214,7 +214,7 @@ export default function App() {
         {page === "map" && (
           <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "48px 20px 80px" }}>
             <h2 style={{ fontSize: "28px", fontWeight: "800", textAlign: "center" }}>World Map</h2>
-            <p style={{ fontSize: "14px", color: textSec, textAlign: "center", marginTop: "6px", marginBottom: "20px" }}>Powered by BlueMap. Full 3D, explorable right here.</p>
+            <p style={{ fontSize: "14px", color: textSec, textAlign: "center", marginTop: "6px", marginBottom: "20px" }}>Powered by BlueMap.</p>
             <div style={{ position: "relative", width: "100%", height: "70vh", minHeight: "400px", borderRadius: "10px", overflow: "hidden", border: `1px solid ${border}`, background: card }}>
               <iframe src={BLUEMAP_URL} title="BlueMap" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }} allow="fullscreen" />
             </div>
