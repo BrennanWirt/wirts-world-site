@@ -3,20 +3,9 @@ import { useState, useEffect } from "react";
 // ── Config ───────────────────────────────────────────────────────────────────
 // Update these before deploying
 const BLUEMAP_URL = "https://map.wirts.world";
-const DISCORD_INVITE = "https://discord.gg/UY553CYev7";
+const DISCORD_INVITE = "https://discord.gg/YOUR_INVITE_LINK";
 const AUTH_URL = "https://auth.wirts.world/login";
 const SERVER_IP = "mc.wirts.world";
-
-// Gallery - replace placeholder URLs with real screenshot paths
-// Drop images in public/gallery/ and reference them like "/gallery/spawn.png"
-const GALLERY_IMAGES = [
-  { id: 1, url: "", caption: "Spawn area at sunset", placeholder: "🌅" },
-  { id: 2, url: "", caption: "Community builds", placeholder: "🏰" },
-  { id: 3, url: "", caption: "Nether hub", placeholder: "🔥" },
-  { id: 4, url: "", caption: "Ocean monument base", placeholder: "🌊" },
-  { id: 5, url: "", caption: "Village trading hall", placeholder: "🏘️" },
-  { id: 6, url: "", caption: "End raid", placeholder: "🐉" },
-];
 
 export default function App() {
   const [page, setPage] = useState("home");
@@ -30,7 +19,6 @@ export default function App() {
   const [cardFade, setCardFade] = useState(true);
   const [modsOpen, setModsOpen] = useState(false);
   const [expandedMod, setExpandedMod] = useState(null);
-  const [selectedImg, setSelectedImg] = useState(null);
 
   const [particles] = useState(() =>
     [...Array(18)].map(() => ({
@@ -147,7 +135,7 @@ export default function App() {
             <span style={{ fontSize: "14px", fontWeight: "700", color: textPrimary, fontFamily: "'Sora', sans-serif", letterSpacing: "-0.3px" }}>Wirt's World</span>
           </button>
           <div style={{ display: "flex", gap: "2px" }}>
-            {["home", "join", "gallery", "map"].map((p) => (
+            {["home", "join", "map"].map((p) => (
               <button key={p} onClick={() => navTo(p)} style={{ padding: "6px 14px", borderRadius: "6px", background: page === p ? goldDim : "none", border: "none", color: page === p ? gold : textDim, fontSize: "13px", fontWeight: "600", cursor: "pointer", fontFamily: "'Sora', sans-serif" }}>
                 {p.charAt(0).toUpperCase() + p.slice(1)}
               </button>
@@ -219,35 +207,6 @@ export default function App() {
                 </div>
               ))}
             </div>
-          </div>
-        )}
-
-        {/* ══ GALLERY ══ */}
-        {page === "gallery" && (
-          <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "48px 20px 80px" }}>
-            <h2 style={{ fontSize: "28px", fontWeight: "800", letterSpacing: "-0.5px", marginBottom: "6px" }}>Gallery</h2>
-            <p style={{ fontSize: "14px", color: textSec, marginBottom: "24px" }}>Some screenshots from the server.</p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "12px" }}>
-              {GALLERY_IMAGES.map((img) => (
-                <button key={img.id} onClick={() => img.url && setSelectedImg(img)} style={{ position: "relative", background: card, border: `1px solid ${border}`, borderRadius: "10px", overflow: "hidden", cursor: img.url ? "pointer" : "default", aspectRatio: "16/9", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Sora', sans-serif" }}>
-                  {img.url ? (
-                    <img src={img.url} alt={img.caption} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  ) : (
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
-                      <span style={{ fontSize: "36px" }}>{img.placeholder}</span>
-                      <span style={{ fontSize: "12px", color: textDim }}>{img.caption}</span>
-                    </div>
-                  )}
-                  {img.url && <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "10px 14px", background: "linear-gradient(transparent, rgba(0,0,0,0.7))" }}><span style={{ fontSize: "13px", fontWeight: "600", color: "#fff" }}>{img.caption}</span></div>}
-                </button>
-              ))}
-            </div>
-            {selectedImg && selectedImg.url && (
-              <div onClick={() => setSelectedImg(null)} style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.9)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: "24px" }}>
-                <img src={selectedImg.url} alt={selectedImg.caption} style={{ maxWidth: "100%", maxHeight: "90vh", borderRadius: "8px", objectFit: "contain" }} />
-                <div style={{ position: "absolute", bottom: "32px", textAlign: "center", color: "#fff", fontSize: "15px", fontWeight: "600" }}>{selectedImg.caption}</div>
-              </div>
-            )}
           </div>
         )}
 
