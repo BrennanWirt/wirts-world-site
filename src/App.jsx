@@ -1,11 +1,21 @@
 import { useState, useEffect } from "react";
 
 // ── Config ───────────────────────────────────────────────────────────────────
-// Update these before deploying
 const BLUEMAP_URL = "https://map.wirts.world";
 const DISCORD_INVITE = "https://discord.gg/UY553CYev7";
 const AUTH_URL = "https://auth.wirts.world/login";
 const SERVER_IP = "mc.wirts.world";
+const AUTH_CACHE_KEY = "ww_auth";
+
+// ── Server icon SVG (minimal orbit W) ────────────────────────────────────────
+const ServerIcon = ({ size = 30 }) => (
+  <svg width={size} height={size} viewBox="0 0 512 512" style={{ borderRadius: size * 0.18 }}>
+    <rect width="512" height="512" rx="90" fill="#131416"/>
+    <ellipse cx="256" cy="256" rx="196" ry="70" fill="none" stroke="#d4a84b" strokeWidth="7" opacity="0.3" transform="rotate(-18, 256, 256)"/>
+    <text x="256" y="318" textAnchor="middle" fontFamily="sans-serif" fontWeight="800" fontSize="200" fill="#d4a84b">W</text>
+    <circle cx="436" cy="178" r="14" fill="#d4a84b" opacity="0.7"/>
+  </svg>
+);
 
 export default function App() {
   const [page, setPage] = useState("home");
@@ -31,9 +41,17 @@ export default function App() {
     }))
   );
 
+  // ── Load cached auth on mount ──
+  useEffect(() => {
+    try {
+      const cached = JSON.parse(localStorage.getItem(AUTH_CACHE_KEY));
+      if (cached && cached.username && cached.isMember) {
+        setUser(cached);
+      }
+    } catch {}
+  }, []);
+
   // ── Handle Discord OAuth callback ──
-  // When the Cloudflare Worker redirects back, the URL will have params like:
-  // ?auth=success&username=brennanwirt&member=true
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const auth = params.get("auth");
@@ -41,10 +59,14 @@ export default function App() {
     if (auth === "success") {
       const username = params.get("username") || "unknown";
       const isMember = params.get("member") === "true";
-      setUser({ username, isMember });
+      const userData = { username, isMember };
+      setUser(userData);
       setPage("join");
       setStep(isMember ? "platform" : "not_member");
-      // Clean the URL so it doesn't show the params
+      // Cache the auth result
+      if (isMember) {
+        try { localStorage.setItem(AUTH_CACHE_KEY, JSON.stringify(userData)); } catch {}
+      }
       window.history.replaceState({}, "", window.location.pathname);
     } else if (auth === "error") {
       setPage("join");
@@ -70,21 +92,38 @@ export default function App() {
   const changeStep = (s) => { setCardFade(false); setTimeout(() => { setStep(s); setCardFade(true); }, 180); };
 
   const handleDiscordLogin = () => {
-    // Redirect to the Cloudflare Worker which starts the real OAuth flow
+    // If we have a cached auth, skip the OAuth flow
+    if (user && user.isMember) {
+      setPage("join");
+      setStep("platform");
+      return;
+    }
     window.location.href = AUTH_URL;
   };
 
-  // Mock login for testing locally (remove in production or keep hidden)
-  const handleMockLogin = (isMember) => {
-    changeStep("auth_checking");
-    setTimeout(() => {
-      setUser({ username: "testuser", isMember });
-      changeStep(isMember ? "platform" : "not_member");
-    }, 1800);
+  const handleSignOut = () => {
+    setUser(null);
+    try { localStorage.removeItem(AUTH_CACHE_KEY); } catch {}
+    setStep("landing");
   };
 
   const copy = (t) => { navigator.clipboard.writeText(t); setCopied(true); setTimeout(() => setCopied(false), 2000); };
-  const navTo = (p) => { setPage(p); if (p === "join") { setStep("landing"); setUser(null); setPlatform(null); setConsole_(null); setModsOpen(false); setExpandedMod(null); } };
+  const navTo = (p) => {
+    setPage(p);
+    if (p === "join") {
+      setPlatform(null);
+      setConsole_(null);
+      setModsOpen(false);
+      setExpandedMod(null);
+      // If user is already authed, skip to platform select
+      if (user && user.isMember) {
+        setStep("platform");
+      } else {
+        setStep("landing");
+        setUser(null);
+      }
+    }
+  };
 
   const vids = { xbox: "g8mHvasVHMs", playstation: "fDmTWBL-_tA", switch: "zalT_oR1nPM" };
   const cLabels = { xbox: "Xbox", playstation: "PlayStation", switch: "Switch" };
@@ -99,7 +138,6 @@ export default function App() {
   const pc = serverStatus?.players?.online || 0;
   const mp = serverStatus?.players?.max || 20;
   const on = serverStatus?.online;
-  // mcsrvstat.us returns players.list as an array of strings (usernames)
   const playerNames = (serverStatus?.players?.list || []).map((name) =>
     typeof name === "string" ? { name } : name
   );
@@ -131,7 +169,7 @@ export default function App() {
       <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(19,20,22,0.9)", backdropFilter: "blur(14px)", borderBottom: `1px solid ${border}`, padding: "0 20px" }}>
         <div style={{ maxWidth: "1000px", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", height: "54px" }}>
           <button onClick={() => navTo("home")} style={{ display: "flex", alignItems: "center", gap: "10px", background: "none", border: "none", cursor: "pointer" }}>
-            <span style={{ width: "30px", height: "30px", borderRadius: "8px", background: `linear-gradient(135deg, ${gold}, #8b6d3f)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", fontWeight: "800", color: bg }}>W</span>
+            <ServerIcon size={30} />
             <span style={{ fontSize: "14px", fontWeight: "700", color: textPrimary, fontFamily: "'Sora', sans-serif", letterSpacing: "-0.3px" }}>Wirt's World</span>
           </button>
           <div style={{ display: "flex", gap: "2px" }}>
@@ -163,6 +201,7 @@ export default function App() {
               </div>
             </div>
 
+            {/* Stats strip */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "1px", background: border, borderRadius: "10px", overflow: "hidden", marginBottom: "24px" }}>
               {[{ k: "VERSION", v: "26.1.2" }, { k: "PLATFORM", v: "Java + Bedrock" }, { k: "PLAYERS", v: statusLoading ? "..." : `${pc} / ${mp}` }, { k: "MODS", v: "Server-side only" }].map((s, i) => (
                 <div key={i} style={{ background: card, padding: "18px 20px" }}>
@@ -172,6 +211,7 @@ export default function App() {
               ))}
             </div>
 
+            {/* Who's Online */}
             {on && playerNames.length > 0 && (
               <div style={{ background: card, border: `1px solid ${border}`, borderRadius: "10px", padding: "16px 20px", marginBottom: "48px" }}>
                 <div style={{ fontSize: "10px", fontFamily: "'DM Mono', monospace", letterSpacing: "1.5px", color: textDim, marginBottom: "10px" }}>WHO'S ONLINE</div>
@@ -192,20 +232,11 @@ export default function App() {
               </div>
             )}
 
-            <h2 style={{ fontSize: "24px", fontWeight: "800", letterSpacing: "-0.5px", marginBottom: "20px" }}>Server Information</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "12px" }}>
-              {[
-                { tag: "MAP", t: "3D World Map", d: "BlueMap renders the entire world in 3D right in your browser. Check out builds or just see where everyone is.", link: true },
-                { tag: "VOICE", t: "Proximity Voice Chat", d: "If you're on Java and install Simple Voice Chat, you can talk to nearby players in-game." },
-                { tag: "SYNC", t: "Discord Nicknames", d: "To be added to the whitelist, you link your Discord and Minecraft accounts. Follow the join instructions to figure out more. Once your accounts are linked, your Discord Nickname changes your name in game." },
-              ].map((f, i) => (
-                <div key={i} style={{ background: card, border: `1px solid ${border}`, borderRadius: "10px", padding: "24px" }}>
-                  <span style={{ fontSize: "10px", fontFamily: "'DM Mono', monospace", letterSpacing: "2px", color: gold }}>{f.tag}</span>
-                  <h3 style={{ fontSize: "16px", fontWeight: "700", marginTop: "8px", marginBottom: "8px" }}>{f.t}</h3>
-                  <p style={{ fontSize: "13px", color: textSec, lineHeight: 1.7 }}>{f.d}</p>
-                  {f.link && <button onClick={() => navTo("map")} style={{ marginTop: "14px", padding: "6px 14px", borderRadius: "6px", border: `1px solid ${goldBorder}`, background: goldDim, color: gold, fontSize: "12px", fontWeight: "600", cursor: "pointer", fontFamily: "'DM Mono', monospace" }}>Open Map →</button>}
-                </div>
-              ))}
+            {/* About section */}
+            <div style={{ background: card, border: `1px solid ${border}`, borderRadius: "10px", padding: "28px", maxWidth: "600px" }}>
+              <p style={{ fontSize: "15px", color: textSec, lineHeight: 1.8 }}>
+                Wirt's World is a server for friends. We've got proximity voice chat if you're on Java and install Simple Voice Chat, your Discord nickname and role color sync to your in-game name automatically, and you can explore the whole world in 3D on our <button onClick={() => navTo("map")} style={{ background: "none", border: "none", color: gold, fontSize: "15px", cursor: "pointer", fontFamily: "'Sora', sans-serif", fontWeight: "600", padding: 0, textDecoration: "underline", textUnderlineOffset: "3px" }}>live map</button>.
+              </p>
             </div>
           </div>
         )}
@@ -214,7 +245,7 @@ export default function App() {
         {page === "map" && (
           <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "48px 20px 80px" }}>
             <h2 style={{ fontSize: "28px", fontWeight: "800", textAlign: "center" }}>World Map</h2>
-            <p style={{ fontSize: "14px", color: textSec, textAlign: "center", marginTop: "6px", marginBottom: "20px" }}>Powered by BlueMap.</p>
+            <p style={{ fontSize: "14px", color: textSec, textAlign: "center", marginTop: "6px", marginBottom: "20px" }}>Powered by BlueMap. Full 3D, explorable right here.</p>
             <div style={{ position: "relative", width: "100%", height: "70vh", minHeight: "400px", borderRadius: "10px", overflow: "hidden", border: `1px solid ${border}`, background: card }}>
               <iframe src={BLUEMAP_URL} title="BlueMap" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }} allow="fullscreen" />
             </div>
@@ -253,17 +284,34 @@ export default function App() {
                 <h2 style={{ fontSize: "24px", fontWeight: "800", letterSpacing: "-0.5px", marginBottom: "4px" }}>Hey, {user?.username}!</h2>
                 <p style={{ fontSize: "14px", color: textSec, lineHeight: 1.7, marginBottom: "16px" }}>What are you playing on?</p>
                 <div style={{ display: "grid", gap: "8px" }}>
-                  {[
-                    { k: "java", icon: "☕", name: "Java Edition", sub: "PC, Mac, Linux", fn: () => { setPlatform("java"); changeStep("java"); } },
-                    { k: "bed", icon: "🪟", name: "Bedrock", sub: "Win10/11 or Mobile", fn: () => { setPlatform("bedrock_pc"); changeStep("java"); } },
-                    { k: "con", icon: "🎮", name: "Console", sub: "Xbox, PlayStation, Switch", fn: () => { setPlatform("console"); changeStep("bedrock_console"); } },
-                  ].map((o) => (
-                    <button key={o.k} onClick={o.fn} style={{ display: "flex", alignItems: "center", gap: "14px", padding: "14px 16px", borderRadius: "8px", border: `1px solid ${border}`, background: card, cursor: "pointer", fontFamily: "'Sora', sans-serif", textAlign: "left", color: textPrimary }}>
-                      <span style={{ fontSize: "22px" }}>{o.icon}</span>
-                      <div><div style={{ fontSize: "15px", fontWeight: "600" }}>{o.name}</div><div style={{ fontSize: "12px", color: textDim }}>{o.sub}</div></div>
+                  <button onClick={() => { setPlatform("java"); changeStep("java"); }} style={{ display: "flex", alignItems: "center", gap: "14px", padding: "14px 16px", borderRadius: "8px", border: `1px solid ${border}`, background: card, cursor: "pointer", fontFamily: "'Sora', sans-serif", textAlign: "left", color: textPrimary }}>
+                    <span style={{ fontSize: "22px" }}>☕</span>
+                    <div><div style={{ fontSize: "15px", fontWeight: "600" }}>Java Edition</div><div style={{ fontSize: "12px", color: textDim }}>PC, Mac, Linux</div></div>
+                  </button>
+                  <button onClick={() => { setPlatform("bedrock"); changeStep("bedrock_type"); }} style={{ display: "flex", alignItems: "center", gap: "14px", padding: "14px 16px", borderRadius: "8px", border: `1px solid ${border}`, background: card, cursor: "pointer", fontFamily: "'Sora', sans-serif", textAlign: "left", color: textPrimary }}>
+                    <span style={{ fontSize: "22px" }}>🪨</span>
+                    <div><div style={{ fontSize: "15px", fontWeight: "600" }}>Bedrock Edition</div><div style={{ fontSize: "12px", color: textDim }}>Windows, Mobile, Console</div></div>
+                  </button>
+                </div>
+                <button onClick={handleSignOut} style={{ background: "none", border: "none", color: textDim, fontSize: "11px", cursor: "pointer", fontFamily: "'DM Mono', monospace", marginTop: "14px", textDecoration: "underline dotted" }}>sign out</button>
+              </>}
+
+              {step === "bedrock_type" && <>
+                <h2 style={{ fontSize: "24px", fontWeight: "800", letterSpacing: "-0.5px", marginBottom: "4px" }}>Bedrock Edition</h2>
+                <p style={{ fontSize: "14px", color: textSec, lineHeight: 1.7, marginBottom: "16px" }}>What device?</p>
+                <div style={{ display: "grid", gap: "8px" }}>
+                  <button onClick={() => { setPlatform("bedrock_pc"); changeStep("java"); }} style={{ display: "flex", alignItems: "center", gap: "14px", padding: "14px 16px", borderRadius: "8px", border: `1px solid ${border}`, background: card, cursor: "pointer", fontFamily: "'Sora', sans-serif", textAlign: "left", color: textPrimary }}>
+                    <span style={{ fontSize: "22px" }}>🪟</span>
+                    <div><div style={{ fontSize: "15px", fontWeight: "600" }}>Windows 10/11 or Mobile</div><div style={{ fontSize: "12px", color: textDim }}>Same as Java, just add the server</div></div>
+                  </button>
+                  {Object.entries(cLabels).map(([k, v]) => (
+                    <button key={k} onClick={() => { setPlatform("console"); setConsole_(k); changeStep("bedrock_console"); }} style={{ display: "flex", alignItems: "center", gap: "14px", padding: "14px 16px", borderRadius: "8px", border: `1px solid ${border}`, background: card, cursor: "pointer", fontFamily: "'Sora', sans-serif", textAlign: "left", color: textPrimary }}>
+                      <span style={{ fontSize: "22px" }}>🎮</span>
+                      <div style={{ fontSize: "15px", fontWeight: "600" }}>{v}</div>
                     </button>
                   ))}
                 </div>
+                <button onClick={() => changeStep("platform")} style={{ background: "none", border: "none", color: textDim, fontSize: "13px", cursor: "pointer", fontFamily: "'Sora', sans-serif", marginTop: "14px" }}>← Back</button>
               </>}
 
               {step === "java" && <>
@@ -308,20 +356,10 @@ export default function App() {
                     </div>}
                   </div>
                 )}
-                <button onClick={() => changeStep("platform")} style={{ background: "none", border: "none", color: textDim, fontSize: "13px", cursor: "pointer", fontFamily: "'Sora', sans-serif" }}>← Back</button>
+                <button onClick={() => changeStep(platform === "java" ? "platform" : "bedrock_type")} style={{ background: "none", border: "none", color: textDim, fontSize: "13px", cursor: "pointer", fontFamily: "'Sora', sans-serif" }}>← Back</button>
               </>}
 
-              {step === "bedrock_console" && !console_ && <>
-                <h2 style={{ fontSize: "24px", fontWeight: "800", letterSpacing: "-0.5px", marginBottom: "12px" }}>Which console?</h2>
-                <div style={{ display: "grid", gap: "8px" }}>
-                  {Object.entries(cLabels).map(([k, v]) => (
-                    <button key={k} onClick={() => setConsole_(k)} style={{ padding: "14px 16px", borderRadius: "8px", border: `1px solid ${border}`, background: card, cursor: "pointer", fontFamily: "'Sora', sans-serif", color: textPrimary, fontSize: "15px", fontWeight: "600", textAlign: "left" }}>{v}</button>
-                  ))}
-                </div>
-                <button onClick={() => changeStep("platform")} style={{ background: "none", border: "none", color: textDim, fontSize: "13px", cursor: "pointer", fontFamily: "'Sora', sans-serif", marginTop: "14px" }}>← Back</button>
-              </>}
-
-              {step === "bedrock_console" && console_ && <>
+              {step === "bedrock_console" && <>
                 <h2 style={{ fontSize: "24px", fontWeight: "800", letterSpacing: "-0.5px", marginBottom: "16px" }}>{cLabels[console_]} Setup</h2>
                 <div style={{ marginBottom: "14px" }}>
                   {[
@@ -339,7 +377,7 @@ export default function App() {
                   <strong style={{ color: gold }}>Whitelist:</strong> <span style={{ color: "#b8a878" }}>To get whitelisted, please attempt to join the server with the info above, then DM <strong>@Wirt's World Bot</strong> with your link code that is displayed.</span>
                 </div>
                 <p style={{ fontSize: "12px", color: textDim, fontStyle: "italic", marginBottom: "14px" }}>If you are on Bedrock and have issues, please shoot me a message. I have been using this plugin for a long time and it has bugs that I know how to fix.</p>
-                <button onClick={() => setConsole_(null)} style={{ background: "none", border: "none", color: textDim, fontSize: "13px", cursor: "pointer", fontFamily: "'Sora', sans-serif" }}>← Back</button>
+                <button onClick={() => { setConsole_(null); changeStep("bedrock_type"); }} style={{ background: "none", border: "none", color: textDim, fontSize: "13px", cursor: "pointer", fontFamily: "'Sora', sans-serif" }}>← Back</button>
               </>}
             </div>
           </div>
@@ -350,7 +388,7 @@ export default function App() {
       <footer style={{ position: "relative", zIndex: 1, borderTop: `1px solid ${border}`, padding: "32px 20px", marginTop: "auto" }}>
         <div style={{ maxWidth: "1000px", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "16px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <span style={{ width: "24px", height: "24px", borderRadius: "6px", background: `linear-gradient(135deg, ${gold}, #8b6d3f)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: "800", color: bg }}>W</span>
+            <ServerIcon size={24} />
             <span style={{ fontSize: "13px", color: textDim }}>Wirt's World</span>
           </div>
           <a href={DISCORD_INVITE} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: "6px", padding: "6px 14px", borderRadius: "6px", background: "rgba(88,101,242,0.1)", border: "1px solid rgba(88,101,242,0.2)", color: "#8b9aff", fontSize: "13px", fontWeight: "600", textDecoration: "none" }}>

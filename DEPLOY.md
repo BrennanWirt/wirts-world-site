@@ -31,39 +31,109 @@ Before anything else, you need to set up Discord OAuth for your app.
 ## Part 2: Cloudflare Worker (Discord OAuth Backend)
 
 This handles the Discord login flow. GitHub Pages can only serve static files,
-so we need this tiny backend to exchange OAuth tokens and check guild membership.
+so we need this tiny backend to do the token exchange and guild membership check.
 
-### 2a. Create the Worker
+The Cloudflare dashboard pushes you to connect a git repo when creating Workers
+now, which is overkill for this. We'll use the Wrangler CLI instead since you
+already have Node installed.
 
-1. Go to your Cloudflare dashboard → **Workers & Pages** → **Create**
-2. Click **"Create Worker"**
-3. Name it `wirts-world-auth`
-4. Click **Deploy** (it'll deploy a "Hello World" placeholder)
-5. Click **Edit code** and replace everything with the contents of
-   `cloudflare-worker/worker.js` from this project
-6. Click **Deploy**
+### 2a. Install Wrangler and log in
 
-### 2b. Set Environment Variables (Secrets)
+Open a terminal on your computer (not the server, your local machine is fine):
 
-1. Go to your Worker → **Settings** → **Variables and Secrets**
-2. Click **Add variable** and add these as **Secrets** (encrypted):
+```bash
+npm install -g wrangler
+wrangler login
+```
 
-   | Name | Value |
-   |------|-------|
-   | DISCORD_CLIENT_ID | (from step 1.5) |
-   | DISCORD_CLIENT_SECRET | (from step 1.5) |
-   | DISCORD_GUILD_ID | 1497627351809392691 |
-   | FRONTEND_URL | https://wirts.world |
+This will open a browser window asking you to authorize Wrangler with your
+Cloudflare account. Click Allow.
 
-3. Click **Save and deploy**
+### 2b. Create the Worker project
 
-### 2c. Add a Custom Domain to the Worker
+```bash
+mkdir wirts-world-auth
+cd wirts-world-auth
+```
 
-1. Go to your Worker → **Triggers** → **Custom Domains**
-2. Add: `auth.wirts.world`
-3. Cloudflare will automatically add the DNS record for you
+Create a file called `wrangler.jsonc` in this folder with this content:
 
-Now `https://auth.wirts.world/login` is your OAuth entry point.
+```json
+{
+  "name": "wirts-world-auth",
+  "main": "worker.js",
+  "compatibility_date": "2026-05-04"
+}
+```
+
+Then copy the `worker.js` file from the `cloudflare-worker/` folder in the
+project zip into this `wirts-world-auth/` folder.
+
+### 2c. Deploy the Worker
+
+```bash
+wrangler deploy
+```
+
+You should see output like:
+```
+Published wirts-world-auth (0.5 sec)
+  https://wirts-world-auth.YOUR_SUBDOMAIN.workers.dev
+```
+
+### 2d. Set your secrets
+
+These are the sensitive values the Worker needs. Run each of these commands
+and paste the value when prompted:
+
+```bash
+wrangler secret put DISCORD_CLIENT_ID
+```
+(Paste your Client ID from the Discord Developer Portal, hit Enter)
+
+```bash
+wrangler secret put DISCORD_CLIENT_SECRET
+```
+(Paste your Client Secret from the Discord Developer Portal, hit Enter)
+
+```bash
+wrangler secret put DISCORD_GUILD_ID
+```
+(Paste: 1497627351809392691)
+
+```bash
+wrangler secret put FRONTEND_URL
+```
+(Paste: https://wirts.world)
+
+### 2e. Add a custom domain to the Worker
+
+1. Go to the Cloudflare dashboard → Workers & Pages
+2. Click on your **wirts-world-auth** worker
+3. Go to **Settings** → **Domains & Routes** (or **Triggers** depending on UI version)
+4. Click **Add** → **Custom Domain**
+5. Enter: `auth.wirts.world`
+6. Click **Add Domain**
+
+Cloudflare will automatically create the DNS record for you. After a minute
+or two, `https://auth.wirts.world/login` should redirect you to Discord's
+OAuth page (it'll error because we haven't set the redirect URL yet, but
+that confirms the Worker is live).
+
+### 2f. Update the Discord redirect URL
+
+Now that the Worker is live, go back to the Discord Developer Portal:
+
+1. Go to your application → **OAuth2** tab
+2. Under **Redirects**, add exactly this URL:
+   ```
+   https://auth.wirts.world/callback
+   ```
+3. Save
+
+That's it for the Worker. You can close the `wirts-world-auth` folder.
+If you ever need to update the Worker code, just edit `worker.js` and run
+`wrangler deploy` again from that folder.
 
 ---
 
