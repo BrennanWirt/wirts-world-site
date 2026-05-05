@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 // ── Config ───────────────────────────────────────────────────────────────────
 // Update these before deploying
 const BLUEMAP_URL = "https://map.wirts.world";
-const DISCORD_INVITE = "https://discord.gg/YOUR_INVITE_LINK";
+const DISCORD_INVITE = "https://discord.gg/UY553CYev7";
 const AUTH_URL = "https://auth.wirts.world/login";
 const SERVER_IP = "mc.wirts.world";
 
