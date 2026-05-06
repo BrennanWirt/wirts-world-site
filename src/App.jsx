@@ -186,7 +186,7 @@ export default function App() {
         {page === "home" && (
           <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "56px 20px 80px" }}>
             <div style={{ marginBottom: "48px" }}>
-              <img src="/icon-animated.gif" alt="Wirt's World" style={{ width: "100px", height: "100px", borderRadius: "20px", marginBottom: "20px", boxShadow: `0 4px 24px ${goldGlow}` }} />
+              <img src="/icon-animated.gif" alt="Wirt's World" style={{ display: "block", width: "100px", height: "100px", borderRadius: "20px", marginBottom: "20px", boxShadow: `0 4px 24px ${goldGlow}` }} />
               <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "5px 14px", borderRadius: "6px", background: goldDim, border: `1px solid ${goldBorder}`, fontSize: "12px", fontFamily: "'DM Mono', monospace", color: textSec, marginBottom: "20px" }}>
                 <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: statusLoading ? textDim : on ? "#22c55e" : "#ef4444", boxShadow: on ? "0 0 6px rgba(34,197,94,0.5)" : "none" }} />
                 {statusLoading ? "Checking..." : on ? `${pc} playing right now` : "Server offline"}

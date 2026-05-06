@@ -1,9 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="32" height="32">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <rect width="512" height="512" rx="90" fill="#131416"/>
-  <ellipse cx="256" cy="256" rx="188" ry="62" fill="none" stroke="#d4a84b" stroke-width="5.5" opacity="0.35" transform="rotate(-15, 256, 256)"/>
-  <circle cx="256" cy="256" r="140" fill="none" stroke="#d4a84b" stroke-width="8.5"/>
-  <ellipse cx="256" cy="256" rx="75" ry="140" fill="none" stroke="#d4a84b" stroke-width="4" opacity="0.35"/>
-  <text x="256" y="258" text-anchor="middle" font-family="Georgia, serif" font-weight="700" font-size="110" fill="#d4a84b">W</text>
-  <text x="256" y="348" text-anchor="middle" font-family="Georgia, serif" font-weight="700" font-size="110" fill="#d4a84b">W</text>
-  <circle cx="430" cy="198" r="11" fill="#d4a84b" opacity="0.65"/>
+  <ellipse cx="256" cy="256" rx="196" ry="70" fill="none" stroke="#d4a84b" stroke-width="7" opacity="0.3" transform="rotate(-18, 256, 256)"/>
+  <text x="256" y="318" text-anchor="middle" font-family="sans-serif" font-weight="800" font-size="200" fill="#d4a84b">W</text>
+  <circle cx="436" cy="178" r="14" fill="#d4a84b" opacity="0.7"/>
 </svg>
