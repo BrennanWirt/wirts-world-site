@@ -103,6 +103,7 @@ export default function App() {
   const [adminToken, setAdminToken] = useState(() => {
     try { return localStorage.getItem("ww_admin_token") || null; } catch {} return null;
   });
+  const [canAdmin, setCanAdmin] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
   // Content from KV
@@ -146,8 +147,8 @@ export default function App() {
     if (adminToken) {
       fetch(`${API_URL}/api/admin-check`, { headers: { Authorization: `Bearer ${adminToken}` } })
         .then(r => r.json())
-        .then(data => setIsAdmin(data.admin))
-        .catch(() => setIsAdmin(false));
+        .then(data => setCanAdmin(data.admin))
+        .catch(() => setCanAdmin(false));
     }
   }, [adminToken]);
 
@@ -167,7 +168,7 @@ export default function App() {
       if (isMember) { try { localStorage.setItem(AUTH_CACHE_KEY, JSON.stringify(userData)); } catch {} }
       if (admin && token) {
         setAdminToken(token);
-        setIsAdmin(true);
+        setCanAdmin(true);
         try { localStorage.setItem("ww_admin_token", token); } catch {}
       }
       window.history.replaceState({}, "", window.location.pathname);
@@ -190,7 +191,7 @@ export default function App() {
 
   const changeStep = (s) => { setCardFade(false); setTimeout(() => { setStep(s); setCardFade(true); }, 180); };
   const handleDiscordLogin = () => { if (user && user.isMember) { setPage("join"); setStep("platform"); return; } window.location.href = AUTH_URL; };
-  const handleSignOut = () => { setUser(null); setAdminToken(null); setIsAdmin(false); try { localStorage.removeItem(AUTH_CACHE_KEY); localStorage.removeItem("ww_admin_token"); } catch {} setStep("landing"); };
+  const handleSignOut = () => { setUser(null); setAdminToken(null); setCanAdmin(false); setIsAdmin(false); try { localStorage.removeItem(AUTH_CACHE_KEY); localStorage.removeItem("ww_admin_token"); } catch {} setStep("landing"); };
   const copy = (t) => { navigator.clipboard.writeText(t); setCopied(true); setTimeout(() => setCopied(false), 2000); };
   const navTo = (p) => {
     setPage(p); setEditingFaq(null);
@@ -274,11 +275,27 @@ export default function App() {
         {particles.map((p, i) => (<div key={i} style={{ position: "absolute", borderRadius: "50%", background: C.gold, left: p.left, top: p.top, width: p.size, height: p.size, opacity: p.op, animation: `float ${p.dur} ease-in-out ${p.delay} infinite` }} />))}
       </div>
 
-      {/* Admin banner */}
-      {isAdmin && (
-        <div style={{ position: "relative", zIndex: 101, background: C.goldDim, borderBottom: `1px solid ${C.goldBorder}`, padding: "6px 20px", textAlign: "center", fontSize: "12px", color: C.gold, fontFamily: "'DM Mono', monospace" }}>
-          Admin mode active
-        </div>
+      {/* Admin toggle — only visible when signed in as admin */}
+      {canAdmin && (
+        <button
+          onClick={() => setIsAdmin(a => !a)}
+          style={{
+            position: "fixed", bottom: "24px", right: "24px", zIndex: 200,
+            display: "flex", alignItems: "center", gap: "8px",
+            padding: "8px 14px", borderRadius: "8px",
+            background: isAdmin ? C.goldDim : "rgba(19,20,22,0.92)",
+            border: `1px solid ${isAdmin ? C.goldBorder : C.border}`,
+            backdropFilter: "blur(12px)",
+            color: isAdmin ? C.gold : C.textDim,
+            fontSize: "11px", fontWeight: "600", fontFamily: "'DM Mono', monospace",
+            letterSpacing: "1px", cursor: "pointer",
+            boxShadow: isAdmin ? `0 0 12px ${C.goldGlow}` : "none",
+            transition: "all 0.2s",
+          }}
+        >
+          <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: isAdmin ? C.gold : C.textDim, flexShrink: 0, transition: "background 0.2s" }} />
+          {isAdmin ? "ADMIN ON" : "ADMIN OFF"}
+        </button>
       )}
 
       {/* Nav */}
