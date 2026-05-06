@@ -1,5 +1,11 @@
 {
   "name": "wirts-world-auth",
   "main": "worker.js",
-  "compatibility_date": "2026-05-04"
+  "compatibility_date": "2026-05-04",
+  "kv_namespaces": [
+    {
+      "binding": "CONTENT",
+      "id": "0257be7978424b7eb842c9852c0752d5"
+    }
+  ]
 }
