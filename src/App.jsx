@@ -73,7 +73,7 @@ const C = {
 export default function App() {
   const getPageFromPath = () => {
     const path = window.location.pathname.replace(/^\//, "").replace(/\/$/, "") || "home";
-    const valid = ["home", "join", "map", "faq", "gallery"];
+    const valid = ["home", "join", "map", "faq", "gallery", "mods"];
     return valid.includes(path) ? path : "home";
   };
   const [page, setPage] = useState(getPageFromPath);
@@ -92,6 +92,12 @@ export default function App() {
   const [cardFade, setCardFade] = useState(true);
   const [modsOpen, setModsOpen] = useState(false);
   const [expandedMod, setExpandedMod] = useState(null);
+
+  // Mods page state
+  const [modsList, setModsList] = useState([]);
+  const [modsFilter, setModsFilter] = useState("all");
+  const [modEditor, setModEditor] = useState(null); // null | "new" | index
+  const [savingMods, setSavingMods] = useState(false);
 
   // Admin state
   const [adminToken, setAdminToken] = useState(() => {
@@ -120,6 +126,7 @@ export default function App() {
   useEffect(() => {
     fetch(`${API_URL}/api/faqs`).then(r => r.json()).then(setFaqs).catch(() => {});
     fetch(`${API_URL}/api/gallery`).then(r => r.json()).then(setGallery).catch(() => {});
+    fetch(`${API_URL}/api/mods`).then(r => r.json()).then(setModsList).catch(() => {});
   }, []);
 
   // ── Load gallery images ──
@@ -189,6 +196,7 @@ export default function App() {
     setPage(p); setEditingFaq(null);
     window.history.pushState({}, "", p === "home" ? "/" : `/${p}`);
     if (p === "join") { setPlatform(null); setConsole_(null); setModsOpen(false); setExpandedMod(null); if (user && user.isMember) setStep("platform"); else { setStep("landing"); setUser(null); } }
+    if (p === "mods") { setModEditor(null); setModsFilter("all"); }
   };
 
   // Handle browser back/forward buttons
@@ -209,6 +217,15 @@ export default function App() {
       await fetch(`${API_URL}/api/faqs`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${adminToken}` }, body: JSON.stringify(newFaqs) });
       setFaqs(newFaqs);
     } catch {} setSaving(false); setEditingFaq(null);
+  }, [adminToken]);
+
+  // ── Admin: save mods ──
+  const saveMods = useCallback(async (newMods) => {
+    setSavingMods(true);
+    try {
+      await fetch(`${API_URL}/api/mods`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${adminToken}` }, body: JSON.stringify(newMods) });
+      setModsList(newMods);
+    } catch {} setSavingMods(false); setModEditor(null);
   }, [adminToken]);
 
   // ── Admin: upload gallery image ──
@@ -272,9 +289,9 @@ export default function App() {
             <span style={{ fontSize: "14px", fontWeight: "700", color: C.textPrimary, fontFamily: "'Sora', sans-serif", letterSpacing: "-0.3px" }}>Wirt's World</span>
           </button>
           <div style={{ display: "flex", gap: "2px" }}>
-            {["home", "join", ...(gallery.length > 0 || isAdmin ? ["gallery"] : []), "map", "faq"].map((p) => (
+            {["home", "join", ...(gallery.length > 0 || isAdmin ? ["gallery"] : []), "map", "mods", "faq"].map((p) => (
               <button key={p} onClick={() => navTo(p)} style={{ padding: "6px 14px", borderRadius: "6px", background: page === p ? C.goldDim : "none", border: "none", color: page === p ? C.gold : C.textDim, fontSize: "13px", fontWeight: "600", cursor: "pointer", fontFamily: "'Sora', sans-serif" }}>
-                {p === "faq" ? "FAQ" : p.charAt(0).toUpperCase() + p.slice(1)}
+                {p === "faq" ? "FAQ" : p === "mods" ? "Mods" : p.charAt(0).toUpperCase() + p.slice(1)}
               </button>
             ))}
           </div>
@@ -414,6 +431,116 @@ export default function App() {
             {saving && <p style={{ fontSize: "12px", color: C.gold, marginTop: "10px" }}>Saving...</p>}
           </div>
         )}
+
+        {/* ══ MODS ══ */}
+        {page === "mods" && (() => {
+          const MOD_CATS = {
+            perf:    { label: "PERFORMANCE", style: { background: "rgba(34,197,94,0.1)", color: "#22c55e", border: "1px solid rgba(34,197,94,0.2)" } },
+            feature: { label: "FEATURE",     style: { background: "rgba(139,154,255,0.12)", color: "#8b9aff", border: "1px solid rgba(139,154,255,0.2)" } },
+            qol:     { label: "QOL",         style: { background: C.goldDim, color: C.gold, border: `1px solid ${C.goldBorder}` } },
+            compat:  { label: "COMPAT",      style: { background: "rgba(251,146,60,0.12)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.2)" } },
+            admin:   { label: "ADMIN",       style: { background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.2)" } },
+            lib:     { label: "LIBRARY",     style: { background: "rgba(120,120,140,0.12)", color: "#888", border: "1px solid rgba(120,120,140,0.2)" } },
+          };
+          const filterCats = ["all", "perf", "feature", "qol", "compat", "admin", "lib"];
+          const filterLabels = { all: "ALL", perf: "PERFORMANCE", feature: "FEATURES", qol: "QOL", compat: "COMPAT", admin: "ADMIN", lib: "LIBRARIES" };
+          const filtered = modsFilter === "all" ? modsList : modsList.filter(m => m.cat === modsFilter);
+
+          const ModEditorForm = ({ mod, onSave, onCancel, label }) => {
+            const [name, setName] = useState(mod?.name || "");
+            const [cat, setCat] = useState(mod?.cat || "feature");
+            const [desc, setDesc] = useState(mod?.desc || "");
+            const [note, setNote] = useState(mod?.note || "");
+            return (
+              <div style={{ background: C.card, border: `1px solid ${C.goldBorder}`, borderRadius: "10px", padding: "16px", marginBottom: "12px" }}>
+                <div style={{ fontSize: "10px", fontFamily: "'DM Mono', monospace", letterSpacing: "1.5px", color: C.gold, marginBottom: "10px" }}>{label}</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "8px" }}>
+                  <input value={name} onChange={e => setName(e.target.value)} placeholder="Mod name" style={{ padding: "9px 11px", borderRadius: "6px", border: `1px solid ${C.border}`, background: C.bg, color: C.textPrimary, fontSize: "13px", fontFamily: "'Sora', sans-serif", outline: "none" }} />
+                  <select value={cat} onChange={e => setCat(e.target.value)} style={{ padding: "9px 11px", borderRadius: "6px", border: `1px solid ${C.border}`, background: C.bg, color: C.textPrimary, fontSize: "13px", fontFamily: "'Sora', sans-serif", outline: "none", cursor: "pointer" }}>
+                    <option value="perf">Performance</option>
+                    <option value="feature">Feature</option>
+                    <option value="qol">QOL</option>
+                    <option value="compat">Compat</option>
+                    <option value="admin">Admin</option>
+                    <option value="lib">Library</option>
+                  </select>
+                </div>
+                <textarea value={desc} onChange={e => setDesc(e.target.value)} placeholder="Short description" rows={3} style={{ width: "100%", padding: "9px 11px", borderRadius: "6px", border: `1px solid ${C.border}`, background: C.bg, color: C.textPrimary, fontSize: "13px", fontFamily: "'Sora', sans-serif", outline: "none", resize: "vertical", lineHeight: 1.6, boxSizing: "border-box", marginBottom: "8px" }} />
+                <input value={note} onChange={e => setNote(e.target.value)} placeholder="Client note (optional)" style={{ width: "100%", padding: "9px 11px", borderRadius: "6px", border: `1px solid ${C.border}`, background: C.bg, color: C.textPrimary, fontSize: "13px", fontFamily: "'Sora', sans-serif", outline: "none", boxSizing: "border-box" }} />
+                <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
+                  <button onClick={() => onSave({ name, cat, desc, note: note || null })} style={{ padding: "6px 14px", borderRadius: "6px", border: "none", background: C.gold, color: C.bg, fontSize: "12px", fontWeight: "600", cursor: "pointer", fontFamily: "'Sora', sans-serif" }}>Save</button>
+                  <button onClick={onCancel} style={{ padding: "6px 14px", borderRadius: "6px", border: `1px solid ${C.border}`, background: "transparent", color: C.textDim, fontSize: "12px", cursor: "pointer", fontFamily: "'Sora', sans-serif" }}>Cancel</button>
+                </div>
+              </div>
+            );
+          };
+
+          return (
+            <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "48px 20px 80px" }}>
+              <h2 style={{ fontSize: "28px", fontWeight: "800", letterSpacing: "-0.5px", marginBottom: "6px" }}>Server Mods</h2>
+              <p style={{ fontSize: "14px", color: C.textSec, marginBottom: "24px" }}>Everything running on the server. All mods are server-side, so you don't need to install anything to join.</p>
+
+              <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "4px 12px", borderRadius: "6px", background: C.goldDim, border: `1px solid ${C.goldBorder}`, fontSize: "11px", fontFamily: "'DM Mono', monospace", color: C.textSec, marginBottom: "20px" }}>
+                <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: C.gold, display: "inline-block" }} />
+                {modsList.length} mods installed
+              </div>
+
+              <div style={{ display: "flex", gap: "8px", marginBottom: "24px", flexWrap: "wrap" }}>
+                {filterCats.map(c => (
+                  <button key={c} onClick={() => setModsFilter(c)} style={{ padding: "5px 14px", borderRadius: "6px", border: modsFilter === c ? `1px solid rgba(212,168,75,0.35)` : `1px solid ${C.border}`, background: modsFilter === c ? C.goldDim : C.card, color: modsFilter === c ? C.gold : C.textSec, fontSize: "12px", fontWeight: "600", cursor: "pointer", fontFamily: "'DM Mono', monospace", letterSpacing: "0.5px" }}>
+                    {filterLabels[c]}
+                  </button>
+                ))}
+              </div>
+
+              {isAdmin && modEditor === "new" && (
+                <ModEditorForm label="ADD MOD" mod={null}
+                  onCancel={() => setModEditor(null)}
+                  onSave={(m) => saveMods([...modsList, m])}
+                />
+              )}
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "10px" }}>
+                {filtered.map((m, i) => {
+                  const realIdx = modsList.indexOf(m);
+                  const cat = MOD_CATS[m.cat] || MOD_CATS.lib;
+                  return modEditor === realIdx ? (
+                    <ModEditorForm key={realIdx} label="EDIT MOD" mod={m}
+                      onCancel={() => setModEditor(null)}
+                      onSave={(updated) => { const n = [...modsList]; n[realIdx] = updated; saveMods(n); }}
+                    />
+                  ) : (
+                    <div key={realIdx} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "10px" }}>
+                        <div style={{ fontSize: "14px", fontWeight: "700", color: C.textPrimary }}>{m.name}</div>
+                        <span style={{ padding: "3px 8px", borderRadius: "4px", fontSize: "10px", fontWeight: "600", fontFamily: "'DM Mono', monospace", letterSpacing: "0.5px", whiteSpace: "nowrap", flexShrink: 0, ...cat.style }}>{cat.label}</span>
+                      </div>
+                      <div style={{ height: "1px", background: C.border }} />
+                      <p style={{ fontSize: "12px", color: C.textSec, lineHeight: 1.7, margin: 0, flex: 1 }}>{m.desc}</p>
+                      {m.note && (
+                        <div style={{ fontSize: "10px", fontFamily: "'DM Mono', monospace", color: C.textDim, display: "flex", alignItems: "center", gap: "5px" }}>
+                          <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: C.gold, flexShrink: 0 }} />
+                          {m.note}
+                        </div>
+                      )}
+                      {isAdmin && (
+                        <div style={{ display: "flex", gap: "6px" }}>
+                          <button onClick={() => setModEditor(realIdx)} style={{ padding: "4px 10px", borderRadius: "4px", border: `1px solid ${C.goldBorder}`, background: C.goldDim, color: C.gold, fontSize: "11px", cursor: "pointer", fontFamily: "'DM Mono', monospace" }}>Edit</button>
+                          <button onClick={() => { if (confirm(`Delete ${m.name}?`)) saveMods(modsList.filter((_, j) => j !== realIdx)); }} style={{ padding: "4px 10px", borderRadius: "4px", border: "1px solid rgba(239,68,68,0.2)", background: "rgba(239,68,68,0.1)", color: "#ef4444", fontSize: "11px", cursor: "pointer", fontFamily: "'DM Mono', monospace" }}>Delete</button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {isAdmin && modEditor === null && (
+                <button onClick={() => setModEditor("new")} style={{ marginTop: "16px", padding: "8px 16px", borderRadius: "6px", border: `1px solid ${C.goldBorder}`, background: C.goldDim, color: C.gold, fontSize: "12px", fontWeight: "600", cursor: "pointer", fontFamily: "'DM Mono', monospace" }}>+ Add Mod</button>
+              )}
+              {savingMods && <p style={{ fontSize: "12px", color: C.gold, marginTop: "10px" }}>Saving...</p>}
+            </div>
+          );
+        })()}
 
         {/* ══ JOIN ══ */}
         {page === "join" && (
