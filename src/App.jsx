@@ -374,6 +374,21 @@ export default function App() {
                     </div>
                   )}
                 </div>
+                {/* Totals summary */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1px", background: C.border, borderRadius: "10px", overflow: "hidden", marginBottom: "10px" }}>
+                  {[
+                    { k: "HOURS PLAYED", v: `${Math.round(playerStats.players.reduce((s, p) => s + p.hoursPlayed, 0))}h` },
+                    { k: "BLOCKS MINED", v: playerStats.players.reduce((s, p) => s + p.blocksMined, 0).toLocaleString() },
+                    { k: "DEATHS", v: playerStats.players.reduce((s, p) => s + p.deaths, 0).toLocaleString() },
+                    { k: "MOB KILLS", v: playerStats.players.reduce((s, p) => s + p.mobKills, 0).toLocaleString() },
+                  ].map((t) => (
+                    <div key={t.k} style={{ background: C.card, padding: "14px 16px" }}>
+                      <div style={{ fontSize: "9px", fontFamily: "'DM Mono', monospace", letterSpacing: "1.5px", color: C.textDim, marginBottom: "5px" }}>{t.k}</div>
+                      <div style={{ fontSize: "16px", fontWeight: "700", color: C.gold, fontFamily: "'DM Mono', monospace" }}>{t.v}</div>
+                    </div>
+                  ))}
+                </div>
+
                 <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", overflow: "hidden" }}>
                   {/* Header row */}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 80px 100px 70px 80px", padding: "8px 16px", borderBottom: `1px solid ${C.border}` }}>
