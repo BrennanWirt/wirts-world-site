@@ -62,6 +62,42 @@ const DEFAULT_FAQS = [
 
 const DEFAULT_GALLERY = [];
 
+const DEFAULT_MODS = [
+  { name: "Sodium",              cat: "perf",    desc: "Complete rendering engine replacement for Fabric. Huge FPS gains on the client side with no gameplay changes.", note: null },
+  { name: "Lithium",             cat: "perf",    desc: "Optimizes server-side game logic including mob AI, block ticking, and chunk loading. Keeps things running smooth with more people on.", note: null },
+  { name: "Krypton",             cat: "perf",    desc: "Optimizes the networking stack to reduce packet overhead and improve connection stability for everyone on the server.", note: null },
+  { name: "Spark",               cat: "perf",    desc: "Performance profiler that watches for lag spikes and helps track down what is causing them. Runs quietly in the background.", note: null },
+  { name: "Chunky",              cat: "perf",    desc: "Pre-generates world chunks so players never hit unloaded terrain. Cuts down on the lag spikes you get when exploring new areas.", note: null },
+  { name: "View Distance Fix",   cat: "perf",    desc: "Fixes a vanilla bug where simulation distance and view distance are incorrectly tied together, which was limiting how many players could connect.", note: null },
+  { name: "Simple Voice Chat",   cat: "feature", desc: "Proximity voice chat built into the game. You can hear players near you talk in real time. You need to install the client mod separately to use it.", note: "Optional client mod available" },
+  { name: "BlueMap",             cat: "feature", desc: "Generates a live 3D map of the server world that you can view from the Map page. Updates as people build and explore.", note: null },
+  { name: "Image2Map",           cat: "feature", desc: "Turn any image URL into an in-game map item. Place it in an item frame and it shows up as the actual image. Good for custom art builds.", note: null },
+  { name: "Vein Miner",          cat: "feature", desc: "Hold sneak while mining to break a whole connected ore vein at once. Works the same way for trees if you want to chop a full one.", note: null },
+  { name: "Falling Tree",        cat: "feature", desc: "Chop the base of a tree with an axe and the whole thing comes down at once. Makes gathering wood a lot less tedious.", note: null },
+  { name: "Armored Elytra",      cat: "feature", desc: "Combine an elytra with a chestplate at the smithing table and get both flight and armor from one item. No more choosing one or the other.", note: null },
+  { name: "Audio Player",        cat: "feature", desc: "Play audio from URLs through note blocks and jukeboxes. Supports MP3, OGG, and live streams. Good for custom music setups.", note: null },
+  { name: "Double Doors",        cat: "qol",     desc: "Right-click one side of a double door and both sides open together. Works on all wood types and fence gates.", note: null },
+  { name: "FSit",                cat: "qol",     desc: "Right-click a stair block to sit on it. Purely cosmetic, just a nice touch for hanging out.", note: null },
+  { name: "Custom Name Tags",    cat: "qol",     desc: "Lets players customize how their nametag looks above their head using formatting codes.", note: null },
+  { name: "First Join Message",  cat: "qol",     desc: "Sends a welcome message to new players the first time they connect. Gives people the basic info they need right away.", note: null },
+  { name: "Styled Nicknames",    cat: "qol",     desc: "Players can set a nickname with color and formatting that shows up in chat and above their head.", note: null },
+  { name: "No Rollback",         cat: "qol",     desc: "Stops the server from snapping players back to their previous position after a lag spike, which cuts down on rubber-banding.", note: null },
+  { name: "Geyser",              cat: "compat",  desc: "The main plugin that translates between Java and Bedrock. This is what lets console and mobile players connect to a Java server.", note: null },
+  { name: "Floodgate",           cat: "compat",  desc: "Works alongside Geyser to handle auth for Bedrock players so they can join without a Java account.", note: null },
+  { name: "ViaVersion",          cat: "compat",  desc: "Lets players on newer client versions connect even if the server is running an older version. Keeps more people able to join.", note: null },
+  { name: "ViaFabric",           cat: "compat",  desc: "Plugs ViaVersion directly into the Fabric server so multi-version support works without needing a proxy layer.", note: null },
+  { name: "TAB",                 cat: "admin",   desc: "Customizes the player tab list with groups, prefixes, and server info like TPS and current player count.", note: null },
+  { name: "Simple Discord Link", cat: "admin",   desc: "Bridges in-game chat with a Discord channel. Messages sent in Minecraft show up in Discord and the other way around.", note: null },
+  { name: "Mod Menu",            cat: "admin",   desc: "Adds a mod list screen to the in-game menu. Mostly useful for checking what is loaded on the server side.", note: null },
+  { name: "Fabric API",          cat: "lib",     desc: "Core library that most Fabric mods depend on. Required by the majority of everything else on this list.", note: null },
+  { name: "Fabric Language Kotlin", cat: "lib",  desc: "Adds Kotlin runtime support so mods written in Kotlin can run on Fabric.", note: null },
+  { name: "Placeholder API",     cat: "lib",     desc: "Shared variable system that lets mods expose and read dynamic values like player counts and server stats.", note: null },
+  { name: "Silk",                cat: "lib",     desc: "Kotlin-based utility library used by Armored Elytra and a couple of other mods on the server.", note: null },
+  { name: "Collective",          cat: "lib",     desc: "Shared library used by several mods from the same developer. Keeps individual mods small by handling common code in one place.", note: null },
+  { name: "Polymer",             cat: "lib",     desc: "Lets server-side mods add custom blocks and items that work for vanilla clients with no client mod required.", note: null },
+  { name: "CraterLib",           cat: "lib",     desc: "Cross-platform library that bridges Fabric and other mod loaders. Required by Simple Discord Link.", note: null },
+];
+
 // ── Route handler ────────────────────────────────────────────────────────────
 
 export default {
@@ -259,6 +295,34 @@ export default {
       gallery = gallery.filter((img) => img.id !== id);
       await env.CONTENT.put("gallery", JSON.stringify(gallery));
 
+      return jsonResponse({ ok: true }, 200, env);
+    }
+
+    // GET /api/mods - public, returns mod list
+    if (url.pathname === "/api/mods" && request.method === "GET") {
+      let mods = await env.CONTENT.get("mods", { type: "json" });
+      if (!mods) {
+        await env.CONTENT.put("mods", JSON.stringify(DEFAULT_MODS));
+        mods = DEFAULT_MODS;
+      }
+      return jsonResponse(mods, 200, env);
+    }
+
+    // PUT /api/mods - admin only, updates mod list
+    if (url.pathname === "/api/mods" && request.method === "PUT") {
+      const authHeader = request.headers.get("Authorization");
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return jsonResponse({ error: "Unauthorized" }, 401, env);
+      }
+
+      const token = authHeader.split(" ")[1];
+      const user = await getDiscordUser(token);
+      if (!user || !isAdmin(user.id, env)) {
+        return jsonResponse({ error: "Forbidden" }, 403, env);
+      }
+
+      const mods = await request.json();
+      await env.CONTENT.put("mods", JSON.stringify(mods));
       return jsonResponse({ ok: true }, 200, env);
     }
 
