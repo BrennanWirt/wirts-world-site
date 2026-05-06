@@ -360,9 +360,12 @@ export default function App() {
           <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "48px 20px 80px" }}>
             <h2 style={{ fontSize: "28px", fontWeight: "800", textAlign: "center" }}>World Map</h2>
             <p style={{ fontSize: "14px", color: C.textSec, textAlign: "center", marginTop: "6px", marginBottom: "20px" }}>Powered by BlueMap. Full 3D, explorable right here.</p>
-            <div style={{ position: "relative", width: "100%", height: "70vh", minHeight: "400px", borderRadius: "10px", overflow: "hidden", border: `1px solid ${C.border}`, background: C.card }}>
-              <iframe src={BLUEMAP_URL} title="BlueMap" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }} allow="fullscreen" />
+            <div style={{ position: "relative", width: "100%", height: "70vh", minHeight: "400px", borderRadius: "10px 10px 0 0", overflow: "hidden", border: `1px solid ${C.border}`, borderBottom: "none", background: C.card }}>
+              <iframe src="http://mc.wirts.world:8100" title="BlueMap" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }} allow="fullscreen" />
             </div>
+            <a href={BLUEMAP_URL} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "12px", borderRadius: "0 0 10px 10px", border: `1px solid ${C.border}`, borderTop: "none", background: C.card, color: C.gold, fontSize: "13px", fontWeight: "600", textDecoration: "none", fontFamily: "'DM Mono', monospace" }}>
+              Open full map ↗
+            </a>
           </div>
         )}
 
