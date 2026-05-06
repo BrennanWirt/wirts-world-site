@@ -5,7 +5,7 @@
   "kv_namespaces": [
     {
       "binding": "CONTENT",
-      "id": "0257be7978424b7eb842c9852c0752d5"
+      "id": "YOUR_KV_NAMESPACE_ID_HERE"
     }
   ]
 }

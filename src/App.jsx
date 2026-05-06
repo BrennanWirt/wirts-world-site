@@ -71,7 +71,12 @@ const C = {
 
 // ── Main App ─────────────────────────────────────────────────────────────────
 export default function App() {
-  const [page, setPage] = useState("home");
+  const getPageFromPath = () => {
+    const path = window.location.pathname.replace(/^\//, "").replace(/\/$/, "") || "home";
+    const valid = ["home", "join", "map", "faq", "gallery"];
+    return valid.includes(path) ? path : "home";
+  };
+  const [page, setPage] = useState(getPageFromPath);
   const [serverStatus, setServerStatus] = useState(null);
   const [statusLoading, setStatusLoading] = useState(true);
   const [step, setStep] = useState("landing");
@@ -182,8 +187,20 @@ export default function App() {
   const copy = (t) => { navigator.clipboard.writeText(t); setCopied(true); setTimeout(() => setCopied(false), 2000); };
   const navTo = (p) => {
     setPage(p); setEditingFaq(null);
+    window.history.pushState({}, "", p === "home" ? "/" : `/${p}`);
     if (p === "join") { setPlatform(null); setConsole_(null); setModsOpen(false); setExpandedMod(null); if (user && user.isMember) setStep("platform"); else { setStep("landing"); setUser(null); } }
   };
+
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      const p = getPageFromPath();
+      setPage(p); setEditingFaq(null);
+      if (p === "join") { setPlatform(null); setConsole_(null); setModsOpen(false); setExpandedMod(null); if (user && user.isMember) setStep("platform"); else { setStep("landing"); } }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [user]);
 
   // ── Admin: save FAQs ──
   const saveFaqs = useCallback(async (newFaqs) => {
