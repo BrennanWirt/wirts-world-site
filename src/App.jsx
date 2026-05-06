@@ -11,9 +11,12 @@ const AUTH_CACHE_KEY = "ww_auth";
 const ServerIcon = ({ size = 30 }) => (
   <svg width={size} height={size} viewBox="0 0 512 512" style={{ borderRadius: size * 0.18 }}>
     <rect width="512" height="512" rx="90" fill="#131416"/>
-    <ellipse cx="256" cy="256" rx="196" ry="70" fill="none" stroke="#d4a84b" strokeWidth="7" opacity="0.3" transform="rotate(-18, 256, 256)"/>
-    <text x="256" y="318" textAnchor="middle" fontFamily="sans-serif" fontWeight="800" fontSize="200" fill="#d4a84b">W</text>
-    <circle cx="436" cy="178" r="14" fill="#d4a84b" opacity="0.7"/>
+    <ellipse cx="256" cy="256" rx="188" ry="62" fill="none" stroke="#d4a84b" strokeWidth="5.5" opacity="0.35" transform="rotate(-15, 256, 256)"/>
+    <circle cx="256" cy="256" r="140" fill="none" stroke="#d4a84b" strokeWidth="8.5"/>
+    <ellipse cx="256" cy="256" rx="75" ry="140" fill="none" stroke="#d4a84b" strokeWidth="4" opacity="0.35"/>
+    <text x="256" y="258" textAnchor="middle" fontFamily="Georgia, serif" fontWeight="700" fontSize="110" fill="#d4a84b">W</text>
+    <text x="256" y="348" textAnchor="middle" fontFamily="Georgia, serif" fontWeight="700" fontSize="110" fill="#d4a84b">W</text>
+    <circle cx="430" cy="198" r="11" fill="#d4a84b" opacity="0.65"/>
   </svg>
 );
 
@@ -183,6 +186,7 @@ export default function App() {
         {page === "home" && (
           <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "56px 20px 80px" }}>
             <div style={{ marginBottom: "48px" }}>
+              <img src="/icon-animated.gif" alt="Wirt's World" style={{ width: "100px", height: "100px", borderRadius: "20px", marginBottom: "20px", boxShadow: `0 4px 24px ${goldGlow}` }} />
               <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "5px 14px", borderRadius: "6px", background: goldDim, border: `1px solid ${goldBorder}`, fontSize: "12px", fontFamily: "'DM Mono', monospace", color: textSec, marginBottom: "20px" }}>
                 <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: statusLoading ? textDim : on ? "#22c55e" : "#ef4444", boxShadow: on ? "0 0 6px rgba(34,197,94,0.5)" : "none" }} />
                 {statusLoading ? "Checking..." : on ? `${pc} playing right now` : "Server offline"}
