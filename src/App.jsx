@@ -123,11 +123,14 @@ export default function App() {
     }))
   );
 
+  const [playerStats, setPlayerStats] = useState({ players: [], updatedAt: null });
+
   // ── Fetch content from API ──
   useEffect(() => {
     fetch(`${API_URL}/api/faqs`).then(r => r.json()).then(setFaqs).catch(() => {});
     fetch(`${API_URL}/api/gallery`).then(r => r.json()).then(setGallery).catch(() => {});
     fetch(`${API_URL}/api/mods`).then(r => r.json()).then(setModsList).catch(() => {});
+    fetch(`${API_URL}/api/stats`).then(r => r.json()).then(setPlayerStats).catch(() => {});
   }, []);
 
   // ── Load gallery images ──
@@ -357,6 +360,45 @@ export default function App() {
               <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "16px 20px", marginBottom: "48px" }}>
                 <div style={{ fontSize: "10px", fontFamily: "'DM Mono', monospace", letterSpacing: "1.5px", color: C.textDim, marginBottom: "6px" }}>WHO'S ONLINE</div>
                 <p style={{ fontSize: "13px", color: C.textSec }}>{pc} player{pc !== 1 ? "s" : ""} online</p>
+              </div>
+            )}
+
+            {/* ── Player stats ── */}
+            {playerStats.players.length > 0 && (
+              <div style={{ marginBottom: "48px" }}>
+                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "12px" }}>
+                  <div style={{ fontSize: "10px", fontFamily: "'DM Mono', monospace", letterSpacing: "1.5px", color: C.textDim }}>PLAYER STATS</div>
+                  {playerStats.updatedAt && (
+                    <div style={{ fontSize: "10px", fontFamily: "'DM Mono', monospace", color: C.textDim }}>
+                      updated {new Date(playerStats.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </div>
+                  )}
+                </div>
+                <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "10px", overflow: "hidden" }}>
+                  {/* Header row */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 80px 100px 70px 80px", padding: "8px 16px", borderBottom: `1px solid ${C.border}` }}>
+                    {["PLAYER", "HOURS", "MINED", "DEATHS", "MOB KILLS"].map((h, i) => (
+                      <div key={h} style={{ fontSize: "10px", fontFamily: "'DM Mono', monospace", letterSpacing: "1px", color: C.textDim, textAlign: i === 0 ? "left" : "right" }}>{h}</div>
+                    ))}
+                  </div>
+                  {/* Player rows */}
+                  {playerStats.players.map((p, i) => (
+                    <div key={p.uuid} style={{ display: "grid", gridTemplateColumns: "1fr 80px 100px 70px 80px", padding: "10px 16px", borderBottom: i < playerStats.players.length - 1 ? `1px solid ${C.border}` : "none", alignItems: "center" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <img src={`https://mc-heads.net/avatar/${p.username}/20`} alt="" style={{ width: "18px", height: "18px", borderRadius: "3px", imageRendering: "pixelated", flexShrink: 0 }} />
+                        <span style={{ fontSize: "13px", fontWeight: "600", color: C.textPrimary }}>{p.username}</span>
+                      </div>
+                      {[
+                        `${p.hoursPlayed}h`,
+                        p.blocksMined.toLocaleString(),
+                        p.deaths.toLocaleString(),
+                        p.mobKills.toLocaleString(),
+                      ].map((v, j) => (
+                        <div key={j} style={{ fontSize: "13px", fontFamily: "'DM Mono', monospace", color: C.textSec, textAlign: "right" }}>{v}</div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
