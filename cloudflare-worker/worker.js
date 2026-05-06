@@ -6,6 +6,7 @@
 //   DISCORD_GUILD_ID
 //   FRONTEND_URL (e.g., https://wirts.world)
 //   ADMIN_DISCORD_ID (your Discord user ID: 1336375427073183815)
+//   STATS_SECRET   (a random secret string, must match what's in push_stats.py)
 //
 // KV Namespace binding (set in wrangler.jsonc or dashboard):
 //   CONTENT - KV namespace for storing site content
@@ -340,6 +341,25 @@ export default {
       }
 
       return jsonResponse({ admin: isAdmin(user.id, env), username: user.username }, 200, env);
+    }
+
+    // GET /api/stats - public, returns aggregated player stats
+    if (url.pathname === "/api/stats" && request.method === "GET") {
+      const stats = await env.CONTENT.get("stats", { type: "json" });
+      return jsonResponse(stats || { players: [], updatedAt: null }, 200, env);
+    }
+
+    // POST /api/stats - server script only, pushes fresh stats
+    if (url.pathname === "/api/stats" && request.method === "POST") {
+      const authHeader = request.headers.get("Authorization");
+      if (!authHeader || authHeader !== `Bearer ${env.STATS_SECRET}`) {
+        return jsonResponse({ error: "Unauthorized" }, 401, env);
+      }
+
+      const body = await request.json();
+      const payload = { players: body.players, updatedAt: new Date().toISOString() };
+      await env.CONTENT.put("stats", JSON.stringify(payload));
+      return jsonResponse({ ok: true }, 200, env);
     }
 
     return new Response("Not found", { status: 404 });
