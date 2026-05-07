@@ -370,7 +370,7 @@ export default function App() {
                   <div style={{ fontSize: "10px", fontFamily: "'DM Mono', monospace", letterSpacing: "1.5px", color: C.textDim }}>PLAYER STATS</div>
                   {playerStats.updatedAt && (
                     <div style={{ fontSize: "10px", fontFamily: "'DM Mono', monospace", color: C.textDim }}>
-                      updated {new Date(playerStats.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      updated {new Date(playerStats.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })} at {new Date(playerStats.updatedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
                     </div>
                   )}
                 </div>
